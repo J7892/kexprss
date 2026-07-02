@@ -2,13 +2,15 @@ name: Update KEXP RSS Feed
 
 on:
   schedule:
-    # Runs every Friday at 9:00 AM UTC (KEXP usually updates charts weekly)
+    # Runs every Friday at 9:00 AM UTC
     - cron: '0 9 * * 5'
-  workflow_dispatch: # Allows you to also trigger it manually with a button click
+  workflow_dispatch: # Allows manual run with a play button
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Gives the action permission to save files back to your repo
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
