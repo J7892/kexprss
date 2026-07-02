@@ -23,10 +23,35 @@ if top_90_header:
     if ol_tag:
         for li in ol_tag.find_all('li'):
             text_line = li.get_text().strip()
+            
             # Split by the standard short keyboard hyphen used in the HTML source code
             if " - " in text_line:
-                artist, album = text_line.split(" - ", 1)
-                top_90_list.append((artist.strip(), album.strip()))
+                artist, album_part = text_line.split(" - ", 1)
+                artist = artist.strip()
+                album_part = album_part.strip()
+                
+                # Clean off the record label parenthetical block if it exists (e.g., "(Loma Vista)")
+                album_clean = album_part
+                if " (" in album_part:
+                    album_clean = album_part.split(" (")[0].strip()
+                
+                # Check if there is an explicit track highlighted in quotes inside the text
+                track_title = None
+                for quote_open, quote_close in [('“', '”'), ('"', '"')]:
+                    if quote_open in album_clean and quote_close in album_clean:
+                        start = album_clean.find(quote_open) + 1
+                        end = album_clean.find(quote_close)
+                        track_title = album_clean[start:end].strip()
+                        break
+                
+                # Strategy: If a track single is inside quotes, use that specific song title.
+                # If it's a clean album/EP name, use the album title.
+                search_target = track_title if track_title else album_clean
+                
+                # Build the ultimate storefront search string
+                search_string = f"{artist} {search_target}"
+                
+                top_90_list.append((artist, album_clean, search_string))
 
 if not top_90_list:
     print("Error: Could not find or parse any items from the Top 90 chart layout.")
@@ -39,10 +64,11 @@ ET.SubElement(channel, "title").text = "KEXP Isolated Top 90 Chart"
 ET.SubElement(channel, "link").text = url
 ET.SubElement(channel, "description").text = "Cleaned line-by-line feed for Apple Shortcuts integration"
 
-for artist, album in top_90_list:
+for artist, album, search_string in top_90_list:
     item = ET.SubElement(channel, "item")
-    ET.SubElement(item, "title").text = artist
-    ET.SubElement(item, "description").text = album
+    # Store the exact concatenated search payload directly into the title tag
+    ET.SubElement(item, "title").text = search_string
+    ET.SubElement(item, "description").text = f"Artist: {artist} | Release: {album}"
     ET.SubElement(item, "guid", isPermaLink="false").text = f"{artist}-{album}"
 
 # 4. Save to a file
